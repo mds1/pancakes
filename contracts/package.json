@@ -1,0 +1,48 @@
+{
+  "name": "contracts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx buidler compile",
+    "test": "npx buidler test",
+    "lint": "eslint --ext .js,.ts ./; npx solhint **/*.sol",
+    "prettier": "prettier --write ."
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "lint-staged"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "@nomiclabs/buidler": "^1.4.6",
+    "@nomiclabs/buidler-ethers": "^2.0.0",
+    "@nomiclabs/buidler-waffle": "^2.0.0",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.0",
+    "husky": "^4.3.0",
+    "lint-staged": "^10.4.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^3.2.0",
+    "eslint": "^7.9.0",
+    "eslint-config-prettier": "^6.11.0",
+    "prettier": "^2.1.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.57",
+    "solhint": "^3.2.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "prettier --write",
+      "eslint --cache --fix"
+    ],
+    "*.{sol}": [
+      "npx solhint **/*.sol"
+    ]
+  }
+}
