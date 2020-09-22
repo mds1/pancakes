@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.6.12;
 
-import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@chainlink/contracts/src/v0.6/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./Buttermilk.sol";
 import "./ChocolateChip.sol";
 
@@ -61,14 +60,14 @@ contract PancakeManager {
   /**
    * @notice Gets ETH/USD price
    */
-  function getEthUsdPrice() internal view returns (uint256) {
+  function getEthUsdPrice() internal view returns (int256) {
     (
       uint80 roundId,
       int256 price,
       uint256 startedAt,
       uint256 timestamp,
       uint80 answeredInRound
-    ) = priceFeed.latestRoundData();
+    ) = priceFeedEthUsd.latestRoundData();
 
     // Silence unused variable compiler warnings
     roundId;

@@ -1,5 +1,6 @@
-node_modules
+node_modules/
+.openzeppelin/.session
 
-#Buidler files
-cache
-artifacts
+# We use /build/ and not build/ because we want to commit the fTokens
+# build artifacts which live in fTokens/build/contracts
+/build/
