@@ -4,12 +4,16 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
- * @notice ERC20 token for Tier 1
+ * @notice ERC20 token for a given tier, defined during PancakeManger contruction
  */
-contract Buttermilk is ERC20("Buttermilk Pancake", "BUTTR") {
+contract PancakeToken is ERC20 {
   address public immutable pancakeManager;
 
-  constructor(address _pancakeManager) public {
+  constructor(
+    string memory _name,
+    string memory _symbol,
+    address _pancakeManager
+  ) public ERC20(_name, _symbol) {
     pancakeManager = _pancakeManager;
   }
 

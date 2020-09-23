@@ -14,8 +14,7 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
   let chocolateChip;
 
   const PancakeManager = contract.fromArtifact('PancakeManager');
-  const Buttermilk = contract.fromArtifact('Buttermilk');
-  const ChocolateChip = contract.fromArtifact('ChocolateChip');
+  const PancakeToken = contract.fromArtifact('PancakeToken');
 
   beforeEach(async () => {
     // Deploy the pancake manager
@@ -30,8 +29,8 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
       .contractAddress;
 
     // Get instances of the token contracts
-    buttermilk = await Buttermilk.at(buttermilkAddress);
-    chocolateChip = await ChocolateChip.at(chocolateChipAddress);
+    buttermilk = await PancakeToken.at(buttermilkAddress);
+    chocolateChip = await PancakeToken.at(chocolateChipAddress);
   });
 
   describe('Initialization', function () {

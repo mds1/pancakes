@@ -4,8 +4,7 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "./Buttermilk.sol";
-import "./ChocolateChip.sol";
+import "./PancakeToken.sol";
 
 /**
  * @notice Main contract
@@ -14,8 +13,8 @@ contract PancakeManager {
   using SafeMath for uint256;
 
   // Token contract instances
-  Buttermilk public buttermilk;
-  ChocolateChip public chocolateChip;
+  PancakeToken public buttermilk;
+  PancakeToken public chocolateChip;
 
   // Chainlink price feed contract instances
   AggregatorV3Interface internal immutable priceFeedEthUsd;
@@ -30,8 +29,8 @@ contract PancakeManager {
 
   constructor() public {
     // Deploy tokens
-    buttermilk = new Buttermilk(address(this));
-    chocolateChip = new ChocolateChip(address(this));
+    buttermilk = new PancakeToken("Buttermilk Pancake", "BUTTR", address(this));
+    chocolateChip = new PancakeToken("Chocolate Chip Pancake", "CHOCO", address(this));
 
     emit ButtermilkDeployed(address(buttermilk));
     emit ChocolateChipDeployed(address(chocolateChip));
