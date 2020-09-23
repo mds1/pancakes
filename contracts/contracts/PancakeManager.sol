@@ -11,6 +11,7 @@ import "./PancakeToken.sol";
  */
 contract PancakeManager {
   using SafeMath for uint256;
+  using SafeERC20 for IERC20;
 
   // Token contract instances
   PancakeToken public buttermilk;
@@ -20,8 +21,12 @@ contract PancakeManager {
   AggregatorV3Interface internal immutable priceFeedEthUsd;
   AggregatorV3Interface internal immutable priceFeedDaiUsd;
 
-  // Last price returned from Chainlink
-  uint256 public lastPrice;
+  // DAI Contract
+  IERC20 public constant DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+
+  // Last prices returned from Chainlink (only used to facilitate testing)
+  uint256 public lastPriceEthUsd;
+  uint256 public lastPriceDaiUsd;
 
   // Events
   event ButtermilkDeployed(address contractAddress);
@@ -46,7 +51,11 @@ contract PancakeManager {
    */
   function depositButtermilkDai(uint256 _amount) external {
     uint256 _price = getDaiUsdPrice();
-    lastPrice = _price;
+    lastPriceDaiUsd = _price;
+
+    DAI.safeTransferFrom(msg.sender, address(this), _amount);
+    uint256 _output = _amount.mul(_price).div(1e8);
+    buttermilk.mint(msg.sender, _output);
   }
 
   /**
@@ -54,8 +63,9 @@ contract PancakeManager {
    */
   function depositButtermilkEth() external payable {
     uint256 _price = getEthUsdPrice();
+    lastPriceEthUsd = _price;
+
     uint256 _output = msg.value.mul(_price).div(1e8);
-    lastPrice = _output;
     buttermilk.mint(msg.sender, _output);
   }
 
@@ -63,12 +73,25 @@ contract PancakeManager {
    * @notice Deposit funds into Tier 2 with DAI
    * @param _amount Amount of DAI to deposit
    */
-  function depositChocolateChipDai(uint256 _amount) external {}
+  function depositChocolateChipDai(uint256 _amount) external {
+    uint256 _price = getDaiUsdPrice();
+    lastPriceDaiUsd = _price;
+
+    DAI.safeTransferFrom(msg.sender, address(this), _amount);
+    uint256 _output = _amount.mul(_price).div(1e8);
+    chocolateChip.mint(msg.sender, _output);
+  }
 
   /**
    * @notice Deposit funds into Tier 2 with ETH
    */
-  function depositChocolateChipEth() external payable {}
+  function depositChocolateChipEth() external payable {
+    uint256 _price = getEthUsdPrice();
+    lastPriceEthUsd = _price;
+
+    uint256 _output = msg.value.mul(_price).div(1e8);
+    chocolateChip.mint(msg.sender, _output);
+  }
 
   // ====================================== Oracle functions =======================================
   /**
