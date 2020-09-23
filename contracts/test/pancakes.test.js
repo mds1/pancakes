@@ -2,6 +2,12 @@ const { accounts, contract, web3, BN } = require('@openzeppelin/test-environment
 const { balance, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
+const { toWei } = web3.utils;
+const defaultDaiAmount = toWei('100');
+const defaultEthAmount = toWei('1');
+
+const [alice] = accounts;
+
 describe('Buttermilk and Chocolate Chip Tokens', function () {
   let pancakeManager;
   let buttermilk;
@@ -28,13 +34,38 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
     chocolateChip = await ChocolateChip.at(chocolateChipAddress);
   });
 
-  it('Should correctly initialize the tokens', async function () {
-    expect(await buttermilk.name()).to.equal('Buttermilk Pancake');
-    expect(await buttermilk.symbol()).to.equal('BUTTR');
-    expect(await buttermilk.decimals()).to.be.bignumber.equal('18');
+  describe('Initialization', function () {
+    it('Correctly initializes the tokens', async function () {
+      expect(await buttermilk.name()).to.equal('Buttermilk Pancake');
+      expect(await buttermilk.symbol()).to.equal('BUTTR');
+      expect(await buttermilk.decimals()).to.be.bignumber.equal('18');
 
-    expect(await chocolateChip.name()).to.equal('Chocolate Chip Pancake');
-    expect(await chocolateChip.symbol()).to.equal('CHOCO');
-    expect(await chocolateChip.decimals()).to.be.bignumber.equal('18');
+      expect(await chocolateChip.name()).to.equal('Chocolate Chip Pancake');
+      expect(await chocolateChip.symbol()).to.equal('CHOCO');
+      expect(await chocolateChip.decimals()).to.be.bignumber.equal('18');
+    });
+  });
+
+  describe('Deposits', function () {
+    it('Lets users join T1 with DAI', async function () {
+      // console.log((await pancakeManager.lastPrice()).toString());
+      const receipt = await pancakeManager.depositButtermilkDai(defaultDaiAmount, { from: alice });
+      // console.log((await pancakeManager.lastPrice()).toString());
+    });
+
+    it('Lets users join T1 with ETH', async function () {
+      console.log((await pancakeManager.lastPrice()).toString());
+      const receipt = await pancakeManager.depositButtermilkEth({
+        from: alice,
+        value: defaultEthAmount,
+      });
+      console.log((await pancakeManager.lastPrice()).toString());
+
+      console.log((await buttermilk.balanceOf(alice)).toString());
+    });
+
+    it('Lets users join T2 with DAI', async function () {});
+
+    it('Lets users join T3 with ETH', async function () {});
   });
 });

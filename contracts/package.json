@@ -9,19 +9,12 @@
     "lint": "eslint --ext .js,.ts ./; npx solhint **/*.sol",
     "prettier": "prettier --write ."
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "lint-staged"
-    }
-  },
   "keywords": [],
   "author": "",
   "license": "AGPL-3.0-only",
   "devDependencies": {
     "chai": "^4.2.0",
-    "husky": "^4.3.0",
-    "lint-staged": "^10.4.0"
+    "husky": "^4.3.0"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.0.10",
@@ -36,14 +29,5 @@
     "prettier": "^2.1.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.57",
     "solhint": "^3.2.0"
-  },
-  "lint-staged": {
-    "*.{js,ts}": [
-      "prettier --write",
-      "eslint --cache --fix"
-    ],
-    "*.{sol}": [
-      "npx solhint **/*.sol"
-    ]
   }
 }
