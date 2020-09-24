@@ -4,6 +4,7 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./PancakeToken.sol";
 
 /**
@@ -13,6 +14,7 @@ contract PancakeManager {
   using SafeMath for uint256;
   using SafeERC20 for IERC20;
 
+  // ======================================= State Varaibles =======================================
   // Token contract instances
   PancakeToken public buttermilk;
   PancakeToken public chocolateChip;
@@ -24,11 +26,25 @@ contract PancakeManager {
   // DAI Contract
   IERC20 public constant DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
 
-  // Last prices returned from Chainlink (only used to facilitate testing)
-  uint256 public lastPriceEthUsd;
-  uint256 public lastPriceDaiUsd;
+  // Uniswap parameters
+  address public uniswapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+  IUniswapV2Router02 public uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
 
-  // Events
+  // Prices returned from Chainlink
+  uint256 public lastPriceEthUsd; // used to compute price deltas at each update
+  uint256 public lastPriceDaiUsd; // only required for testing
+
+  // If true, no further deposits are allowed
+  bool public hasStarted = false;
+
+  // Target return rate for Tier 1 (Buttermilk) users, where 300 = 3%
+  uint256 public targetRate = 300;
+
+  // Value of each token in USD, value of 1e18 means 1 token is worth 1 USD
+  uint256 public buttermilkER = 1e18;
+  uint256 public chocolateChipER = 1e18;
+
+  // =========================================== Events ============================================
   event ButtermilkDeployed(address contractAddress);
   event ChocolateChipDeployed(address contractAddress);
 
@@ -45,16 +61,15 @@ contract PancakeManager {
     priceFeedDaiUsd = AggregatorV3Interface(0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9);
   }
 
+  // ============================================ Join =============================================
   /**
    * @notice Deposit funds into Tier 1 with DAI
    * @param _amount Amount of DAI to deposit
    */
   function depositButtermilkDai(uint256 _amount) external {
-    uint256 _price = getDaiUsdPrice();
-    lastPriceDaiUsd = _price;
-
+    _setDaiUsdPrice();
     DAI.safeTransferFrom(msg.sender, address(this), _amount);
-    uint256 _output = _amount.mul(_price).div(1e8);
+    uint256 _output = _amount.mul(lastPriceDaiUsd).div(1e8);
     buttermilk.mint(msg.sender, _output);
   }
 
@@ -62,10 +77,8 @@ contract PancakeManager {
    * @notice Deposit funds into Tier 1 with ETH
    */
   function depositButtermilkEth() external payable {
-    uint256 _price = getEthUsdPrice();
-    lastPriceEthUsd = _price;
-
-    uint256 _output = msg.value.mul(_price).div(1e8);
+    _setEthUsdPrice();
+    uint256 _output = msg.value.mul(lastPriceEthUsd).div(1e8);
     buttermilk.mint(msg.sender, _output);
   }
 
@@ -74,11 +87,9 @@ contract PancakeManager {
    * @param _amount Amount of DAI to deposit
    */
   function depositChocolateChipDai(uint256 _amount) external {
-    uint256 _price = getDaiUsdPrice();
-    lastPriceDaiUsd = _price;
-
+    _setDaiUsdPrice();
     DAI.safeTransferFrom(msg.sender, address(this), _amount);
-    uint256 _output = _amount.mul(_price).div(1e8);
+    uint256 _output = _amount.mul(lastPriceDaiUsd).div(1e8);
     chocolateChip.mint(msg.sender, _output);
   }
 
@@ -86,18 +97,46 @@ contract PancakeManager {
    * @notice Deposit funds into Tier 2 with ETH
    */
   function depositChocolateChipEth() external payable {
-    uint256 _price = getEthUsdPrice();
-    lastPriceEthUsd = _price;
-
-    uint256 _output = msg.value.mul(_price).div(1e8);
+    _setEthUsdPrice();
+    uint256 _output = msg.value.mul(lastPriceEthUsd).div(1e8);
     chocolateChip.mint(msg.sender, _output);
+  }
+
+  // =========================================== Kickoff ===========================================
+
+  /**
+   @notice Officially starts the pool. All funds are converted to ETH and no one else can join
+   */
+  function kickoff() external {
+    require(!hasStarted, "PancakeManager: Already started");
+    require(
+      buttermilk.totalSupply() == chocolateChip.totalSupply(),
+      "PancakeManager: Invalid start condition"
+    );
+
+    // Convert all DAI to ETH and mark as initialized
+    _swapDaiForEth();
+
+    // Set current price of ETH and mark as initialized
+    _setEthUsdPrice();
+    hasStarted = true;
+  }
+
+  // ====================================== Update Balances ========================================
+
+  /**
+   * @notice Updates USD value that each token is redeemable for
+   */
+  function update() external {
+    // TODO
   }
 
   // ====================================== Oracle functions =======================================
   /**
-   * @notice Gets ETH/USD price, divide result by 1e8 to get human-readable value
+   * @notice Gets ETH/USD price.
+   * @dev Divide result by 1e8 to get human-readable value
    */
-  function getEthUsdPrice() internal view returns (uint256) {
+  function _setEthUsdPrice() internal {
     (
       uint80 roundId,
       int256 price,
@@ -113,13 +152,14 @@ contract PancakeManager {
 
     // If the round is not complete yet, timestamp is 0
     require(timestamp > 0, "Round not complete");
-    return uint256(price);
+    lastPriceEthUsd = uint256(price);
   }
 
   /**
-   * @notice Gets DAI/USD price, divide result by 1e8 to get human-readable value
+   * @notice Gets DAI/USD price.
+   * @dev Divide result by 1e8 to get human-readable value
    */
-  function getDaiUsdPrice() internal view returns (uint256) {
+  function _setDaiUsdPrice() internal {
     (
       uint80 roundId,
       int256 price,
@@ -135,6 +175,31 @@ contract PancakeManager {
 
     // If the round is not complete yet, timestamp is 0
     require(timestamp > 0, "Round not complete");
-    return uint256(price);
+    lastPriceDaiUsd = uint256(price);
   }
+
+  // ====================================== Uniswap functions ======================================
+  /**
+   * @notice Converts all DAI in this contract to ETH
+   */
+  function _swapDaiForEth() internal {
+    require(DAI.approve(uniswapRouterAddress, uint256(-1)), "PancakeManager: Approval failed");
+
+    address[] memory _path = new address[](2);
+    _path[0] = address(DAI);
+    _path[1] = uniswapRouter.WETH();
+
+    uniswapRouter.swapExactTokensForETH(
+      DAI.balanceOf(address(this)), // amountIn
+      0, // amountOutMin
+      _path, // path
+      address(this), // recipient
+      block.timestamp // deadline
+    );
+  }
+
+  /**
+   * @notice Fallback function to receive ETH after swapping with Uniswap
+   */
+  receive() external payable {}
 }

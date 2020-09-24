@@ -7,7 +7,7 @@ const { toWei } = web3.utils;
 const defaultDaiAmount = toWei('50');
 const defaultEthAmount = toWei('0.5');
 const oneE8 = new BN('100000000'); // 1e8
-const [alice] = accounts;
+const [alice, bob] = accounts;
 const exchange = addresses.exchange;
 
 describe('Buttermilk and Chocolate Chip Tokens', function () {
@@ -100,6 +100,31 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
       const exchangeRate = await pancakeManager.lastPriceEthUsd();
       const expectedTokenAmount = new BN(defaultEthAmount).mul(exchangeRate).div(oneE8);
       expect(balance).to.be.bignumber.equal(expectedTokenAmount);
+    });
+  });
+
+  describe('Kickoff', function () {
+    it('Initializes the pool', async function () {
+      // Have users join both tiers. Only use DAI for now to ensure we don't have to worry about
+      // exchange rates and making sure both sides have an equal amount of tokens
+      await transferAndApproveDai(alice, defaultDaiAmount);
+      await pancakeManager.depositButtermilkDai(defaultDaiAmount, { from: alice });
+      await transferAndApproveDai(bob, defaultDaiAmount);
+      await pancakeManager.depositChocolateChipDai(defaultDaiAmount, { from: bob });
+
+      // Since we only use DAI here, pool should currently have all DAI and no ETH. After kickoff,
+      // it should have all ETH and no DAI
+      const initialDaiBalance = await dai.balanceOf(pancakeManager.address);
+      const initialEthBalance = await balance.current(pancakeManager.address);
+      expect(initialDaiBalance).to.be.bignumber.equal(new BN(defaultDaiAmount).mul(new BN('2')));
+      expect(initialEthBalance).to.be.bignumber.equal('0');
+
+      await pancakeManager.kickoff({ from: alice });
+
+      const finalDaiBalance = await dai.balanceOf(pancakeManager.address);
+      const finalEthBalance = await balance.current(pancakeManager.address);
+      expect(finalDaiBalance).to.be.bignumber.equal('0');
+      expect(finalEthBalance).to.be.bignumber.above('0');
     });
   });
 });
