@@ -44,6 +44,9 @@ contract PancakeManager {
   uint256 public buttermilkER = 1e18;
   uint256 public chocolateChipER = 1e18;
 
+  // Number of tokens in each tier is constant and equal
+  uint256 public numberOfTokens;
+
   // =========================================== Events ============================================
   event ButtermilkDeployed(address contractAddress);
   event ChocolateChipDeployed(address contractAddress);
@@ -117,8 +120,9 @@ contract PancakeManager {
     // Convert all DAI to ETH and mark as initialized
     _swapDaiForEth();
 
-    // Set current price of ETH and mark as initialized
+    // Set properties
     _setEthUsdPrice();
+    numberOfTokens = buttermilk.totalSupply();
     hasStarted = true;
   }
 
@@ -126,9 +130,21 @@ contract PancakeManager {
 
   /**
    * @notice Updates USD value that each token is redeemable for
+   * @dev Nomenclature is as follows, with all values in USD
+   *   - x1  = total value of tokens in tier 1
+   *   - x2  = total value of tokens in tier 2
+   *   - y1  = total profit earned by tier 1
+   *   - Y   = total, combined profit earned by the system
+   *   - dk1 = change in token value of tier 1 tokens
+   *   - dk2 = change in token value of tier 2 tokens
    */
   function update() external {
-    // TODO
+    // Save off the old price, and then update the current price
+    uint256 _prevPriceEthUsd = lastPriceEthUsd;
+    _setEthUsdPrice();
+
+    // Calculate change in token value for tier 1
+    // uint256 dk1 = 
   }
 
   // ====================================== Oracle functions =======================================

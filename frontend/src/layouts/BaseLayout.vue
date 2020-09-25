@@ -6,7 +6,7 @@
           <!-- Logo and nav bar -->
           <div class="row justify-start items-center">
             <router-link
-              class="cursor-pointer col-auto"
+              class="cursor-pointer col-auto q-mr-lg"
               tag="div"
               :to="{ name: 'home' }"
               style="line-height: 0"

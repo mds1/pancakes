@@ -2,7 +2,7 @@
   <q-page padding class="text-center">
     <h1 class="q-mb-none">Growth of $1,000</h1>
     <div class="text-caption">
-      Returns shown are from a random 90-day sample of historical ETH price data.
+      Returns shown are from a random {{ duration }}-day sample of historical ETH price data.
       <div @click="updatePlot" class="hyperlink">Click to randomize</div>
     </div>
     <div>
@@ -67,6 +67,7 @@ import Plotly from 'plotly.js-dist';
 import priceData from '../eth-usd-coingecko.json';
 
 function usePlots() {
+  const duration = 180; // days
   const finalValueEth = ref(0);
   const finalValueT1 = ref(0);
   const finalValueT2 = ref(0);
@@ -77,7 +78,6 @@ function usePlots() {
 
   function updatePlot() {
     // Chose random slot of `duration` days
-    const duration = priceData.length; // days
     const minIndex = 0;
     const maxIndex = priceData.length - duration;
     const startIndex = Math.floor(Math.random() * (maxIndex - minIndex) + minIndex); // min is inclusive, max is exclusive
@@ -101,7 +101,7 @@ function usePlots() {
     const growthOfT1 = [startPrice];
     const growthOfT2 = [startPrice];
     const numberOfTokens = 1; // doesn't make a difference here
-    const targetT1ReturnRate = 0.01 / 100;
+    const targetT1ReturnRate = 0.001; // 0.1% per day is ~44% APY because ETH returns are wild
     for (let i = 0; i < returns.length; i += 1) {
       // returns has length of 1 less than prices, so returnsEth[index] gives the previous price
       const returnRate = Number(returns[i]);
@@ -132,11 +132,11 @@ function usePlots() {
       if (previousTotalValueT2 + totalProfit - desiredT1Profit >= 0) {
         // Case 1: There are sufficient funds in T2 to give T1 holders the full return, so we give
         // this to T1 holders and T2 holders get the remainder
-        console.log('desiredT1Profit: ', desiredT1Profit);
         addToT1 = desiredT1Profit / numberOfTokens;
         addToT2 = (totalProfit - desiredT1Profit) / numberOfTokens;
       } else {
-        // Case 2: There are not sufficient profits to give T1 tokens holder the full return,
+        // Case 2: There are not sufficient profits, so T1 holders are given all potential profits
+        // and T2 holders take a loss 
         addToT1 = (previousTotalValueT2 + totalProfit) / numberOfTokens;
         addToT2 = -previousTotalValueT2 / numberOfTokens;
       }
@@ -193,7 +193,16 @@ function usePlots() {
 
   onMounted(() => updatePlot());
 
-  return { updatePlot, finalValueEth, finalValueT1, finalValueT2, yieldEth, yieldT1, yieldT2 };
+  return {
+    updatePlot,
+    finalValueEth,
+    finalValueT1,
+    finalValueT2,
+    yieldEth,
+    yieldT1,
+    yieldT2,
+    duration,
+  };
 }
 
 export default defineComponent({

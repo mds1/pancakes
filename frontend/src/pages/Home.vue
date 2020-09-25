@@ -11,7 +11,7 @@
               <div class="text-caption">Low-risk, low-return</div>
               <!-- <img src="~assets/fa-trash.png" style="height: 3rem;" /> -->
             </q-card-section>
-            <q-card-section> Targets a plain and steady 3% return on your USD </q-card-section>
+            <q-card-section> Targets a plain and steady rate of return on your USD </q-card-section>
           </connect-wallet>
         </q-card>
 
