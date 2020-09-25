@@ -5,31 +5,46 @@
         <q-toolbar-title class="col">
           <!-- Logo and nav bar -->
           <div class="row justify-start items-center">
-            <router-link class="col-auto" tag="div" :to="{ name: 'home' }" style="line-height: 0">
+            <router-link
+              class="cursor-pointer col-auto"
+              tag="div"
+              :to="{ name: 'home' }"
+              style="line-height: 0"
+            >
               <div class="row justify-start items-center">
                 <img alt="Ethereum logo" src="~assets/app-logo.png" style="max-width: 50px" />
                 <div class="dark-toggle q-ml-md">Pancakes</div>
               </div>
             </router-link>
 
-            <!-- <router-link
+            <router-link
               active-class="is-active"
               class="col-auto cursor-pointer dark-toggle q-ml-lg"
               exact
               tag="div"
-              :to="{ name: 'home' }"
+              :to="{ name: 'buttermilk' }"
             >
-              <span style="font-size: 1rem">Home</span>
-            </router-link> -->
+              <span style="font-size: 1rem">Buttermilk</span>
+            </router-link>
+
+            <router-link
+              active-class="is-active"
+              class="col-auto cursor-pointer dark-toggle q-ml-lg"
+              exact
+              tag="div"
+              :to="{ name: 'chocolateChip' }"
+            >
+              <span style="font-size: 1rem">Chocolate Chip</span>
+            </router-link>
           </div>
         </q-toolbar-title>
 
         <!-- Login address and settings -->
         <div class="col">
           <div class="row justify-end q-mt-xs">
-            <!-- <div v-if="userAddress" class="col-xs-12 dark-toggle text-caption text-right">
+            <div v-if="userAddress" class="col-xs-12 dark-toggle text-caption text-right">
               {{ userAddress }}
-            </div> -->
+            </div>
             <q-icon
               class="col-auto dark-toggle"
               :name="$q.dark.isActive ? 'fas fa-sun' : 'fas fa-moon'"
@@ -50,6 +65,7 @@
 <script lang="ts">
 import { defineComponent, onMounted } from '@vue/composition-api';
 import { Dark, LocalStorage } from 'quasar';
+import useWalletStore from 'src/store/wallet';
 
 function useDarkMode() {
   function toggleDarkMode() {
@@ -64,10 +80,15 @@ function useDarkMode() {
   return { toggleDarkMode, mounted };
 }
 
+function useWalletAddress() {
+  const { userAddress } = useWalletStore();
+  return { userAddress };
+}
+
 export default defineComponent({
   name: 'MainLayout',
   setup() {
-    return { ...useDarkMode() };
+    return { ...useDarkMode(), ...useWalletAddress() };
   },
 });
 </script>
