@@ -16,6 +16,11 @@ const routes: RouteConfig[] = [
         path: '/chocolateChip',
         component: () => import('pages/TierChocolateChip.vue'),
       },
+      {
+        name: 'returns',
+        path: '/returns',
+        component: () => import('pages/Returns.vue'),
+      },
     ],
   },
 

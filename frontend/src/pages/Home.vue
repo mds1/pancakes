@@ -29,6 +29,10 @@
           </connect-wallet>
         </q-card>
       </div>
+
+      <router-link class="cursor-pointer hyperlink q-mt-lg" tag="div" :to="{ name: 'returns' }">
+        See historical returns
+      </router-link>
     </div>
   </q-page>
 </template>
