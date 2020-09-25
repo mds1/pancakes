@@ -1,0 +1,34 @@
+// app global css in Sass form
+.app-container
+  max-width: 1439px
+  margin: 0 auto
+
+.body--light
+  .dark-toggle
+    color: $dark
+
+  .hyperlink
+    color: $primary
+    text-decoration: underline
+    cursor: pointer
+    display: inline-block
+
+.body--dark
+  .dark-toggle
+    color: $light
+
+  .hyperlink
+    color: $primary
+    text-decoration: underline
+    cursor: pointer
+    display: inline-block
+
+.card-border-no-hover
+  border: 1px solid $light
+
+.card-border
+  border: 1px solid $light
+
+.card-border:hover
+  border: 1px solid $primary
+  cursor: pointer
