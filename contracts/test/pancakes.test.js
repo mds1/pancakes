@@ -49,7 +49,7 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
   });
 
   describe('Initialization', function () {
-    it.skip('Correctly initializes the tokens', async function () {
+    it('Correctly initializes the tokens', async function () {
       expect(await buttermilk.name()).to.equal('Buttermilk Pancake');
       expect(await buttermilk.symbol()).to.equal('BUTTR');
       expect(await buttermilk.decimals()).to.be.bignumber.equal('18');
@@ -61,51 +61,51 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
   });
 
   describe('Deposits', function () {
-    it.skip('Lets users join Buttermilk tier with DAI', async function () {
+    it('Lets users join Buttermilk tier with DAI', async function () {
       await transferAndApproveDai(alice, defaultDaiAmount);
       const receipt = await pancakeManager.depositButtermilkDai(defaultDaiAmount, { from: alice });
       const balance = await buttermilk.balanceOf(alice);
-      const exchangeRate = await pancakeManager.lastPriceDaiUsd();
+      const exchangeRate = await pancakeManager.currentPriceDaiUsd();
       const expectedTokenAmount = new BN(defaultDaiAmount).mul(exchangeRate).div(oneE8);
       expect(balance).to.be.bignumber.equal(expectedTokenAmount);
     });
 
-    it.skip('Lets users join Buttermilk tier with ETH', async function () {
+    it('Lets users join Buttermilk tier with ETH', async function () {
       const receipt = await pancakeManager.depositButtermilkEth({
         from: alice,
         value: defaultEthAmount,
       });
       const balance = await buttermilk.balanceOf(alice);
-      const exchangeRate = await pancakeManager.lastPriceEthUsd();
+      const exchangeRate = await pancakeManager.currentPriceEthUsd();
       const expectedTokenAmount = new BN(defaultEthAmount).mul(exchangeRate).div(oneE8);
       expect(balance).to.be.bignumber.equal(expectedTokenAmount);
     });
 
-    it.skip('Lets users join ChocolateChip Tier with DAI', async function () {
+    it('Lets users join ChocolateChip Tier with DAI', async function () {
       await transferAndApproveDai(alice, defaultDaiAmount);
       const receipt = await pancakeManager.depositChocolateChipDai(defaultDaiAmount, {
         from: alice,
       });
       const balance = await chocolateChip.balanceOf(alice);
-      const exchangeRate = await pancakeManager.lastPriceDaiUsd();
+      const exchangeRate = await pancakeManager.currentPriceDaiUsd();
       const expectedTokenAmount = new BN(defaultDaiAmount).mul(exchangeRate).div(oneE8);
       expect(balance).to.be.bignumber.equal(expectedTokenAmount);
     });
 
-    it.skip('Lets users join ChocolateChip Tier with ETH', async function () {
+    it('Lets users join ChocolateChip Tier with ETH', async function () {
       const receipt = await pancakeManager.depositChocolateChipEth({
         from: alice,
         value: defaultEthAmount,
       });
       const balance = await chocolateChip.balanceOf(alice);
-      const exchangeRate = await pancakeManager.lastPriceEthUsd();
+      const exchangeRate = await pancakeManager.currentPriceEthUsd();
       const expectedTokenAmount = new BN(defaultEthAmount).mul(exchangeRate).div(oneE8);
       expect(balance).to.be.bignumber.equal(expectedTokenAmount);
     });
   });
 
   describe('Kickoff', function () {
-    it.skip('Initializes the pool', async function () {
+    it('Initializes the pool', async function () {
       // Have users join both tiers. Only use DAI for now to ensure we don't have to worry about
       // exchange rates and making sure both sides have an equal amount of tokens
       await transferAndApproveDai(alice, defaultDaiAmount);
@@ -120,7 +120,7 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
       expect(initialDaiBalance).to.be.bignumber.equal(new BN(defaultDaiAmount).mul(new BN('2')));
       expect(initialEthBalance).to.be.bignumber.equal('0');
 
-      await pancakeManager.kickoff({ from: alice });
+      await pancakeManager.kickoff();
 
       const finalDaiBalance = await dai.balanceOf(pancakeManager.address);
       const finalEthBalance = await balance.current(pancakeManager.address);
@@ -131,8 +131,31 @@ describe('Buttermilk and Chocolate Chip Tokens', function () {
 
   describe('Main functionality', () => {
     it('Updates value that tokens are redeemable for', async () => {
-      expect(await pancakeManager.buttermilkER()).to.be.bignumber.equal(oneE18)
-      expect(await pancakeManager.chocolateChipER()).to.be.bignumber.equal(oneE18)
-    })
-  })
+      expect(await pancakeManager.buttermilkPrice()).to.be.bignumber.equal(oneE18);
+      expect(await pancakeManager.chocolateChipPrice()).to.be.bignumber.equal(oneE18);
+
+      // Initialize pool
+      await transferAndApproveDai(alice, defaultDaiAmount);
+      await pancakeManager.depositButtermilkDai(defaultDaiAmount, { from: alice });
+      await transferAndApproveDai(bob, defaultDaiAmount);
+      await pancakeManager.depositChocolateChipDai(defaultDaiAmount, { from: bob });
+      await pancakeManager.kickoff();
+
+      // Update price which has a currently hardcoded 10% bump in price
+      await pancakeManager.update();
+
+      // We expect Buttermilk Tier to get the full 0.1% being targeted. We calculate expected final
+      // amount used (1 + 0.1/100) = 10010/10000
+      const expectedButtermilkPrice = oneE18.mul(new BN(10010)).div(new BN(10000));
+      const finalButtermilkPrice = await pancakeManager.buttermilkPrice();
+      expect(finalButtermilkPrice).to.be.bignumber.equal(expectedButtermilkPrice);
+
+      // Now ChocolateChip should get the remainder. The expected amount of their bump is +10% from
+      // the price increase and +9.9% from the unused portion from T1 holders, giving 19.9% total,
+      // or (1 + 19.9/100) = 1199/1000
+      const expectedChocolateChipPrice = oneE18.mul(new BN(1199)).div(new BN(1000));
+      const finalChocolateChipPrice = await pancakeManager.chocolateChipPrice();
+      expect(finalChocolateChipPrice).to.be.bignumber.equal(expectedChocolateChipPrice);
+    });
+  });
 });
