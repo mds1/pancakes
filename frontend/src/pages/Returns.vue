@@ -136,7 +136,7 @@ function usePlots() {
         addToT2 = (totalProfit - desiredT1Profit) / numberOfTokens;
       } else {
         // Case 2: There are not sufficient profits, so T1 holders are given all potential profits
-        // and T2 holders take a loss 
+        // and T2 holders take a loss
         addToT1 = (previousTotalValueT2 + totalProfit) / numberOfTokens;
         addToT2 = -previousTotalValueT2 / numberOfTokens;
       }

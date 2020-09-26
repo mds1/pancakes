@@ -7,7 +7,10 @@
     "compile": "npx oz compile --solc-version 0.6.12",
     "test": "yarn run compile && mocha --exit --recursive --timeout 0",
     "lint": "eslint --ext .js,.ts ./; npx solhint **/*.sol",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "ganache": "source .env && source .env && ganache-cli -d -i 3729 -f https://mainnet.infura.io/v3/$INFURA_ID",
+    "01-deploy": "node scripts/01-deploy.js",
+    "02-kickoff": "node scripts/02-kickoff.js"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +32,7 @@
     "mocha": "^8.1.3",
     "prettier": "^2.1.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.57",
-    "solhint": "^3.2.0"
+    "solhint": "^3.2.0",
+    "web3": "^1.3.0"
   }
 }

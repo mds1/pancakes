@@ -14,7 +14,7 @@ function useWallet(context: SetupContext, redirectTo: string) {
   const { setProvider, userAddress } = useWalletStore();
 
   async function connectWallet() {
-    if (userAddress) {
+    if (userAddress.value) {
       // If wallet is already connected, just navigate to the specified page
       await context.root.$router.push({ name: redirectTo });
       return;
@@ -75,7 +75,7 @@ function useWallet(context: SetupContext, redirectTo: string) {
     const onboard = Onboard({
       dappId: process.env.BLOCKNATIVE_API_KEY,
       darkMode: Dark.isActive,
-      networkId: 1,
+      networkId: 3729, // arbitrary ID we use for our local ganache to avoid nonce mismatches
       walletSelect: {
         wallets: wallets,
       },
