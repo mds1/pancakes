@@ -4,17 +4,19 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "./PancakeToken.sol";
 
 /**
  * @notice Main contract
  */
-contract PancakeManager {
+contract PancakeManager is ReentrancyGuard {
   using SafeMath for uint256;
   using SignedSafeMath for int256;
   using SafeERC20 for IERC20;
+  using Address for address payable;
 
   // ======================================= State Varaibles =======================================
   // Token contract instances
@@ -23,21 +25,12 @@ contract PancakeManager {
 
   // Chainlink price feed contract instances
   AggregatorV3Interface internal immutable priceFeedEthUsd;
-  AggregatorV3Interface internal immutable priceFeedDaiUsd;
-
-  // DAI Contract
-  IERC20 public constant DAI = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-
-  // Uniswap parameters
-  address public uniswapRouterAddress = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
-  IUniswapV2Router02 public uniswapRouter = IUniswapV2Router02(uniswapRouterAddress);
 
   // Prices returned from Chainlink
   uint256 public currentPriceEthUsd; // used to compute price deltas at each update
-  uint256 public currentPriceDaiUsd; // only required for testing
 
   // Target return rate for Tier 1 (Buttermilk) users, where 1e8 = 1%
-  uint256 public targetReturn = 1e7; // 0.1% per day
+  uint256 public constant targetReturn = 1e7; // 0.1% per day
 
   // Value of each token in USD, value of 1e18 means 1 token is worth 1 USD
   uint256 public buttermilkPrice = 1e18;
@@ -49,6 +42,13 @@ contract PancakeManager {
   //   3. Withdrawals enabled (after the 180 day lockup period)
   bool public depositsEnabled;
   bool public withdrawalsEnabled;
+
+  // Variables for managing the lockup period and redemption
+  uint256 public startTime; // time that kickoff was initiated
+  uint256 public lockupDuration = 180 * 24 * 3600; // lockup period duration, in seconds
+
+  // Placeholder address to represent ETH
+  address public constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // Number of tokens in each tier is constant and equal, so this variable isn't used now, but it
   // may be useful in a future version to account for unequal demand between the tiers
@@ -66,9 +66,8 @@ contract PancakeManager {
     emit ButtermilkDeployed(address(buttermilk));
     emit ChocolateChipDeployed(address(chocolateChip));
 
-    // Configure price feeds
+    // Configure price feed
     priceFeedEthUsd = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
-    priceFeedDaiUsd = AggregatorV3Interface(0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9);
 
     // Enable deposits
     depositsEnabled = true;
@@ -101,41 +100,20 @@ contract PancakeManager {
   }
 
   // ============================================ Join =============================================
-  /**
-   * @notice Deposit funds into Tier 1 with DAI
-   * @param _amount Amount of DAI to deposit
-   */
-  function depositButtermilkDai(uint256 _amount) external beforeLockup {
-    _setDaiUsdPrice();
-    DAI.safeTransferFrom(msg.sender, address(this), _amount);
-    uint256 _output = _amount.mul(currentPriceDaiUsd).div(1e8);
-    buttermilk.mint(msg.sender, _output);
-  }
 
   /**
    * @notice Deposit funds into Tier 1 with ETH
    */
-  function depositButtermilkEth() external payable beforeLockup {
+  function depositButtermilk() external payable beforeLockup {
     _setEthUsdPrice();
     uint256 _output = msg.value.mul(currentPriceEthUsd).div(1e8);
     buttermilk.mint(msg.sender, _output);
   }
 
   /**
-   * @notice Deposit funds into Tier 2 with DAI
-   * @param _amount Amount of DAI to deposit
-   */
-  function depositChocolateChipDai(uint256 _amount) external beforeLockup {
-    _setDaiUsdPrice();
-    DAI.safeTransferFrom(msg.sender, address(this), _amount);
-    uint256 _output = _amount.mul(currentPriceDaiUsd).div(1e8);
-    chocolateChip.mint(msg.sender, _output);
-  }
-
-  /**
    * @notice Deposit funds into Tier 2 with ETH
    */
-  function depositChocolateChipEth() external payable beforeLockup {
+  function depositChocolateChip() external payable beforeLockup {
     _setEthUsdPrice();
     uint256 _output = msg.value.mul(currentPriceEthUsd).div(1e8);
     chocolateChip.mint(msg.sender, _output);
@@ -153,37 +131,38 @@ contract PancakeManager {
       "PancakeManager: Invalid start condition"
     );
 
-    // Convert all DAI to ETH and mark as initialized
-    _swapDaiForEth();
-
     // Set properties
     _setEthUsdPrice();
-    // numberOfTokens = buttermilk.totalSupply();
     depositsEnabled = false;
+    startTime = block.timestamp;
+    // numberOfTokens = buttermilk.totalSupply(); // currently not used
   }
 
   // ====================================== Update Balances ========================================
 
   /**
    * @notice Updates USD value that each token is redeemable for, designed to be called each day
+   * during the lockup phase
    */
   function update() external duringLockup {
     // Save off the old price, and then update the current price
-    uint256 _lastPriceEthUsd = currentPriceEthUsd;
+    int256 _lastPriceEthUsd = int256(currentPriceEthUsd);
     _setEthUsdPrice();
 
     // Get the return between the two time periods. We scale by 1e8 to keep precision
-    uint256 _priceDifference = currentPriceEthUsd.sub(_lastPriceEthUsd);
-    uint256 _returnPercent = (_priceDifference).mul(1e8).div(_lastPriceEthUsd);
+    int256 _priceDifference = int256(currentPriceEthUsd).sub(_lastPriceEthUsd);
+    int256 _returnPercent = _priceDifference.mul(1e8).div(_lastPriceEthUsd);
 
     // Get previous values
     uint256 _prevT1Price = buttermilkPrice;
     uint256 _prevT2Price = chocolateChipPrice;
-    uint256 _prevTotalValueT1 = _prevT1Price; // true since we're not scaling by number of tokens
-    uint256 _prevTotalValueT2 = _prevT2Price; // true since we're not scaling by number of tokens
+    uint256 _prevTotalValueT1 = _prevT1Price; // works since we're not scaling by number of tokens
+    uint256 _prevTotalValueT2 = _prevT2Price; // works since we're not scaling by number of tokens
 
     // Get total profit (scaled by 1e18*1e8)
-    uint256 _totalProfit = (_prevTotalValueT1.add(_prevTotalValueT2)).mul(_returnPercent);
+    int256 _totalProfit = (int256(_prevTotalValueT1).add(int256(_prevTotalValueT2))).mul(
+      _returnPercent
+    );
 
     // Calculate desired Buttermilk profit for this timespan (scaled by 1e18*1e8)
     uint256 _desiredT1Profit = _prevTotalValueT1.mul(targetReturn).div(100);
@@ -191,15 +170,15 @@ contract PancakeManager {
     // Calculate delta values for each token
     int256 _addToT1;
     int256 _addToT2;
-    if (_prevTotalValueT2.add(_totalProfit).sub(_desiredT1Profit) >= 0) {
+    if (int256(_prevTotalValueT2).add(_totalProfit).sub(int256(_desiredT1Profit)) >= 0) {
       // Case 1: There are sufficient funds in T2 to give T1 holders the full return, so we give
       // this to T1 holders and T2 holders get the remainder or take a small loss
       _addToT1 = int256(_desiredT1Profit); // always positive
-      _addToT2 = int256(_totalProfit.sub(_desiredT1Profit)); // can be negative
+      _addToT2 = int256(_totalProfit.sub(int256(_desiredT1Profit))); // can be negative
     } else {
       // Case 2: There are not sufficient profits, so T1 holders are given all potential profits
       // and T2 holders take a loss
-      _addToT1 = int256(_prevTotalValueT2.add(_totalProfit)); // can be negative
+      _addToT1 = int256(_prevTotalValueT2).add(_totalProfit); // can be negative
       _addToT2 = int256(_prevTotalValueT2).mul(-1); // always negative
     }
 
@@ -212,7 +191,57 @@ contract PancakeManager {
     require(int256(_prevT1Price) >= _addToT1.mul(-1), "PancakeManager: Invalid T1 condition");
     require(int256(_prevT2Price) >= _addToT2.mul(-1), "PancakeManager: Invalid T2 condition");
     buttermilkPrice = uint256(int256(_prevT1Price).add(_addToT1));
-    chocolateChipPrice = uint256(int256(_prevT1Price).add(_addToT2));
+    chocolateChipPrice = uint256(int256(_prevT2Price).add(_addToT2));
+  }
+
+  // ========================================= Withdrawal ==========================================
+
+  /**
+   * @notice Sets the contract's state to enable withdrawals
+   */
+  function enableWithdrawals() external duringLockup {
+    uint256 _endTime = startTime + lockupDuration;
+    require(block.timestamp >= _endTime, "PancakeManager: Lockup duration not reached");
+    withdrawalsEnabled = true;
+  }
+
+  /**
+   * @notice Burn T1 tokens to withdraw their funds as the selected output token
+   * @dev Because funds are burned, no approval or token transfer is needed
+   * @param _amount Amount of tokens to redeem
+   */
+  function withdrawButtermilk(uint256 _amount) external afterLockup nonReentrant {
+    // Burn their tokens
+    // buttermilk.burn(msg.sender, _amount);
+
+    // Calculate how much USD their tokens are worth
+    uint256 _usdAmount = _amount.mul(buttermilkPrice); // scaled by (1e18 * 1e18)
+
+    // Convert to ETH
+    // currentPriceEthUsd cannot be updated after lockup ends so is consistent for all users
+    uint256 _ethAmount = _usdAmount.div(currentPriceEthUsd).div(1e10); // scaled to 1e18
+
+    // Send funds to user
+    msg.sender.sendValue(_ethAmount);
+  }
+
+  uint256 public ethAmount;
+
+  /**
+   * @notice Withdraw T2 tokens to the selected output token
+   * @param _amount Amount of tokens to redeem
+   */
+  function withdrawChocolateChip(uint256 _amount) external afterLockup nonReentrant {
+    // Calculate how much USD their tokens are worth
+    uint256 _usdAmount = _amount.mul(chocolateChipPrice); // scaled by (1e18 * 1e18)
+
+    // Convert to ETH
+    // currentPriceEthUsd cannot be updated after lockup ends so is consistent for all users
+    uint256 _ethAmount = _usdAmount.div(currentPriceEthUsd).div(1e10); // scaled to 1e18
+    ethAmount = _ethAmount;
+
+    // Send funds to user
+    msg.sender.sendValue(_ethAmount);
   }
 
   // ====================================== Oracle functions =======================================
@@ -229,9 +258,6 @@ contract PancakeManager {
       uint80 answeredInRound
     ) = priceFeedEthUsd.latestRoundData();
 
-    // TEMP FOR DEV/TESTING: IF PRICE IS NOT ZERO, FORCE A CHANGE
-    bool isPriceZero = currentPriceEthUsd == 0;
-
     // Silence unused variable compiler warnings
     roundId;
     startedAt;
@@ -241,58 +267,15 @@ contract PancakeManager {
     require(timestamp > 0, "Round not complete");
     currentPriceEthUsd = uint256(price);
 
-    // TEMP FOR DEV/TESTING: IF PRICE IS NOT ZERO, FORCE A 10% increase
-    if (!isPriceZero) {
+    // TEMP FOR DEV/TESTING: AFTER KICKOFF, INCREASE PRICE BY 10%
+    if (!depositsEnabled && !withdrawalsEnabled) {
       currentPriceEthUsd = currentPriceEthUsd.mul(110).div(100);
     }
   }
 
-  /**
-   * @notice Gets DAI/USD price.
-   * @dev Divide result by 1e8 to get human-readable value
-   */
-  function _setDaiUsdPrice() internal {
-    (
-      uint80 roundId,
-      int256 price,
-      uint256 startedAt,
-      uint256 timestamp,
-      uint80 answeredInRound
-    ) = priceFeedDaiUsd.latestRoundData();
-
-    // Silence unused variable compiler warnings
-    roundId;
-    startedAt;
-    answeredInRound;
-
-    // If the round is not complete yet, timestamp is 0
-    require(timestamp > 0, "Round not complete");
-    currentPriceDaiUsd = uint256(price);
-  }
-
-  // ====================================== Uniswap functions ======================================
-  /**
-   * @notice Converts all DAI in this contract to ETH
-   */
-  function _swapDaiForEth() internal {
-    require(DAI.approve(uniswapRouterAddress, uint256(-1)), "PancakeManager: Approval failed");
-
-    address[] memory _path = new address[](2);
-    _path[0] = address(DAI);
-    _path[1] = uniswapRouter.WETH();
-
-    uniswapRouter.swapExactTokensForETH(
-      DAI.balanceOf(address(this)), // amountIn
-      0, // amountOutMin
-      _path, // path
-      address(this), // recipient
-      block.timestamp // deadline
-    );
-  }
-
   // ======================================= Other functions =======================================
   /**
-   * @notice Fallback function to receive ETH after swapping with Uniswap
+   * @notice Fallback function to receive ETH
    */
   receive() external payable {}
 }

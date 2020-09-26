@@ -17,8 +17,23 @@ contract PancakeToken is ERC20 {
     pancakeManager = _pancakeManager;
   }
 
+  /**
+   * @notice Mint tokens to a specified account, only callable by the PancakeManager on deposit
+   * @param _to Address to mint tokens into
+   * @param _amount Number of tokens to mint
+   */
   function mint(address _to, uint256 _amount) external {
     require(msg.sender == pancakeManager, "PancakeManager: Caller not authorized");
     _mint(_to, _amount);
+  }
+
+  /**
+   * @notice Burn tokens from a specified account, only callable by the PancakeManager on withdraw
+   * @param _from Address to burn tokens from
+   * @param _amount Number of tokens to burn
+   */
+  function burn(address _from, uint256 _amount) external {
+    require(msg.sender == pancakeManager, "PancakeManager: Caller not authorized");
+    _burn(_from, _amount);
   }
 }
