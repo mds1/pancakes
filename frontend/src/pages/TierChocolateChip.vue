@@ -51,15 +51,8 @@
         <a href="https://app.uniswap.org/#/swap" target="_blank" class="hyperlink">Uniswap</a>.
       </div>
     </div>
-    <q-form v-else class="pancake-form">
+    <q-form v-else class="pancake-form" @submit="onWithdraw">
       <div class="row justify-center items-center">
-        <q-input
-          v-model.number="withdrawAmount"
-          class="col-7 q-mr-sm"
-          dense
-          label="Amount"
-          outlined
-        />
         <q-btn
           class="q-mt-md"
           color="primary"
@@ -91,8 +84,6 @@ function usePancakeManager() {
   );
 
   const depositAmount = ref(0);
-  const withdrawAmount = ref(0);
-
   const areDepositsActive = ref(true);
   const areWithdrawsActive = ref(false);
   const endDate = ref(new Date());
@@ -134,12 +125,29 @@ function usePancakeManager() {
     }
   }
 
+  async function onWithdraw() {
+    try {
+      // Withdraw all tokens
+      const buttermilkAddress = await pancakeManager.buttermilk();
+      const buttermilk = new ethers.Contract(buttermilkAddress, tokenAbi.abi, signer.value);
+      const balance = await buttermilk.balanceOf(userAddress.value);
+      console.log('balance: ', balance);
+      const tx = await pancakeManager.withdrawButtermilk(balance);
+      const receipt = await tx.wait();
+      await updateBalance();
+      notifyUser('positive', 'Withdraw successful!');
+    } catch (e) {
+      showError(e);
+    }
+  }
+
   return {
     depositAmount,
     withdrawAmount,
     areDepositsActive,
     areWithdrawsActive,
     onDeposit,
+    onWithdraw,
     tokenBalance,
     usdBalance,
     endDate,

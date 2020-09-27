@@ -212,7 +212,7 @@ contract PancakeManager is ReentrancyGuard {
    */
   function withdrawButtermilk(uint256 _amount) external afterLockup nonReentrant {
     // Burn their tokens
-    // buttermilk.burn(msg.sender, _amount);
+    buttermilk.burn(msg.sender, _amount);
 
     // Calculate how much USD their tokens are worth
     uint256 _usdAmount = _amount.mul(buttermilkPrice); // scaled by (1e18 * 1e18)
@@ -225,20 +225,20 @@ contract PancakeManager is ReentrancyGuard {
     msg.sender.sendValue(_ethAmount);
   }
 
-  uint256 public ethAmount;
-
   /**
    * @notice Withdraw T2 tokens to the selected output token
    * @param _amount Amount of tokens to redeem
    */
   function withdrawChocolateChip(uint256 _amount) external afterLockup nonReentrant {
+    // Burn their tokens
+    chocolateChip.burn(msg.sender, _amount);
+
     // Calculate how much USD their tokens are worth
     uint256 _usdAmount = _amount.mul(chocolateChipPrice); // scaled by (1e18 * 1e18)
 
     // Convert to ETH
     // currentPriceEthUsd cannot be updated after lockup ends so is consistent for all users
     uint256 _ethAmount = _usdAmount.div(currentPriceEthUsd).div(1e10); // scaled to 1e18
-    ethAmount = _ethAmount;
 
     // Send funds to user
     msg.sender.sendValue(_ethAmount);

@@ -17,11 +17,6 @@ const PancakeManagerData = require('../build/contracts/PancakeManager.json');
     adminWallet
   );
 
-  // Kickoff the pool
-  const tx = await pancakeManager.kickoff();
-  await tx.wait();
-  console.log('Kickoff successful');
-
   // Update the price a few times
   for (let i = 0; i < 25; i += 1) {
     const updateTx = await pancakeManager.update();
