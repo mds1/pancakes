@@ -5,6 +5,7 @@ A system for enabling users who are both long ETH to trade off risk with profits
 - [Pancakes](#pancakes)
   - [Development](#development)
   - [What is it](#what-is-it)
+  - [More information](#more-information)
 
 ## Development
 
@@ -20,3 +21,8 @@ Pancakes creates a way for more conservative investors (investors in the Butterm
 - When ETH loses value, all losses are absorbed by CHOCO holders first. It is only when CHOCO loses all its value that BUTTR tokens start to lose value.
 
 In other words, when ETH is doing well, everyone makes money and CHOCO holders make a lot, but when the market goes down, the losses are primarily absorbed by CHOCO holders, keeping BUTTR intact.
+
+## More information
+
+- [Devpost submission](https://devpost.com/software/pancakes-f54xg9)
+- [Youtube video](https://youtu.be/xCa3CTEtLt8)
