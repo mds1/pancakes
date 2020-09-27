@@ -5,7 +5,6 @@ Frontend for the Pancakes contracts
 - [Pancakes Frontend](#pancakes-frontend)
   - [Development Setup](#development-setup)
   - [Demo](#demo)
-    - [Customize the configuration](#customize-the-configuration)
 
 ## Development Setup
 
@@ -41,7 +40,3 @@ To continue interacting with the app:
 3. Run `yarn run 02-kickoff` to lock the contract and prevent further deposits. This will simulate a few price updates as well. You can now view the UI and see how the value of your BUTTR and CHOCO has increased
 4. Run `yarn run 03-finalize` to skip to the end of the lockup period and enable withdrawal of funds
 5. In your browser you can now withdraw funds back to your wallet
-
-### Customize the configuration
-
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
