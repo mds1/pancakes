@@ -84,7 +84,7 @@ function usePancakeManager() {
   );
 
   const depositAmount = ref(0);
-  const areDepositsActive = ref(true);
+  const areDepositsActive = ref(false);
   const areWithdrawsActive = ref(false);
   const endDate = ref(new Date());
 
@@ -143,7 +143,6 @@ function usePancakeManager() {
 
   return {
     depositAmount,
-    withdrawAmount,
     areDepositsActive,
     areWithdrawsActive,
     onDeposit,

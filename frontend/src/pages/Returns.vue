@@ -1,6 +1,6 @@
 <template>
   <q-page padding class="text-center">
-    <h1 class="q-mb-none">Growth of $1,000</h1>
+    <h3 class="q-mb-md">Growth of $1,000</h3>
     <div class="text-caption">
       Returns shown are from a random {{ duration }}-day sample of historical ETH price data.
       <div @click="updatePlot" class="hyperlink">Click to randomize</div>

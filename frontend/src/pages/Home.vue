@@ -7,10 +7,10 @@
       </router-link>
       <div class="row justify-center q-mt-lg">
         <!-- Cancel Transaction -->
-        <q-card class="card-border col-xs-4 col-sm-3 col-md-2 q-py-md q-mr-md">
+        <q-card class="card-border col-xs-4 col-sm-3 q-py-md q-mr-md">
           <connect-wallet redirect-to="buttermilk">
             <q-card-section>
-              <div class="text-h5">Buttermilk</div>
+              <div class="text-h5 header">Buttermilk</div>
               <div class="text-caption">Low-risk, low-return</div>
             </q-card-section>
             <q-card-section class="q-py-none">
@@ -21,10 +21,10 @@
         </q-card>
 
         <!-- Speed up transaction -->
-        <q-card class="card-border col-xs-4 col-sm-3 col-md-2 q-py-md q-ml-md">
+        <q-card class="card-border col-xs-4 col-sm-3 q-py-md q-ml-md">
           <connect-wallet redirect-to="chocolateChip">
             <q-card-section>
-              <div class="text-h5">Chocolate Chip</div>
+              <div class="text-h5 header">Chocolate Chip</div>
               <div class="text-caption">High-risk, high-return</div>
             </q-card-section>
             <q-card-section class="q-py-none">

@@ -13,7 +13,7 @@
             >
               <div class="row justify-start items-center">
                 <img alt="Ethereum logo" src="~assets/app-logo.png" style="max-width: 50px" />
-                <div class="dark-toggle q-ml-md">Pancakes</div>
+                <div class="header dark-toggle q-ml-md">Pancakes</div>
               </div>
             </router-link>
 
