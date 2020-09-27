@@ -2,20 +2,23 @@
   <q-page padding class="text-center">
     <!-- Account balance -->
     <div class="pancake-form">
-      <h5 class="q-mb-sm">Chocolate Chip Account</h5>
+      <div class="text-grey">${{ ethPrice.toFixed(2) }}/ETH</div>
+      <h5 class="q-my-sm">Chocolate Chip Account</h5>
       <div class="text-caption q-mb-lg">
         Deposits and withdrawals use ETH, but profits and losses are denominated in USD
       </div>
       <div class="row justify-center items-center">
-        <div class="col-3 text-left">Balance</div>
-        <div class="col-3 text-left">
-          {{ Number(tokenBalance).toFixed(2) }}
-          CHOCO
+        <div class="col-auto q-mr-lg">
+          <div class="text-left">Balance</div>
+          <div class="text-left">
+            {{ Number(tokenBalance).toFixed(2) }}
+            CHOCO
+          </div>
         </div>
-      </div>
-      <div class="row justify-center items-center">
-        <div class="col-3 text-left">Redeemable For</div>
-        <div class="col-3 text-left">${{ Number(usdBalance).toFixed(2) }}</div>
+        <div class="col-auto">
+          <div class="text-left">Redeemable For</div>
+          <div class="text-left">${{ Number(usdBalance).toFixed(2) }}</div>
+        </div>
       </div>
     </div>
     <!-- Deposit -->
@@ -42,7 +45,7 @@
     <!-- Withdraw -->
     <h5 class="q-mb-sm q-mt-xl">Withdraw ETH</h5>
     <div v-if="!areWithdrawsActive">
-      <div>Withdrawals are not yet available for this pool.</div>
+      <div>Withdrawals will be available on {{ endDate.toLocaleDateString() }}.</div>
       <div class="text-caption">
         If you need access to your funds sooner, you can sell your tokens on
         <a href="https://app.uniswap.org/#/swap" target="_blank" class="hyperlink">Uniswap</a>.
@@ -89,11 +92,14 @@ function usePancakeManager() {
 
   const depositAmount = ref(0);
   const withdrawAmount = ref(0);
+
   const areDepositsActive = ref(true);
   const areWithdrawsActive = ref(false);
+  const endDate = ref(new Date());
 
   const tokenBalance = ref('0');
   const usdBalance = ref('0');
+  const ethPrice = ref(0);
 
   async function updateBalance() {
     const chocolateChipAddress = await pancakeManager.chocolateChip();
@@ -106,6 +112,13 @@ function usePancakeManager() {
 
   onMounted(async () => {
     await updateBalance();
+    areDepositsActive.value = await pancakeManager.depositsEnabled();
+    areWithdrawsActive.value = await pancakeManager.withdrawalsEnabled();
+    const startTime = await pancakeManager.startTime();
+    const lockupDuration = await pancakeManager.lockupDuration();
+    const endTime = startTime.add(lockupDuration).mul(1000); // in milliseconds
+    endDate.value = new Date(endTime.toNumber());
+    ethPrice.value = (await pancakeManager.currentPriceEthUsd()).toNumber() / 1e8;
   });
 
   async function onDeposit() {
@@ -129,6 +142,8 @@ function usePancakeManager() {
     onDeposit,
     tokenBalance,
     usdBalance,
+    endDate,
+    ethPrice,
   };
 }
 

@@ -38,7 +38,9 @@ To continue interacting with the app:
 
 1. Deploy the Pancake contracts with `yarn run 01-deploy` and paste the PancakeManager address in `src/addresses.json`. This will likely already be popuated correctly
 2. In your browser, use account 1 to deposit into the Buttermilk tier and use account 2 to deposit into the Chocolate Chip. You must deploy an equal amount into both tiers before continuing
-3. Run `yarn run 02-kickoff` to lock the contract and prevent further deposits. This will simulate a few price updates as well
+3. Run `yarn run 02-kickoff` to lock the contract and prevent further deposits. This will simulate a few price updates as well. You can now view the UI and see how the value of your BUTTR and CHOCO has increased
+4. Run `yarn run 03-finalize` to skip to the end of the lockup period and enable withdrawal of funds
+5. In your browser you can now withdraw funds back to your wallet
 
 ### Customize the configuration
 

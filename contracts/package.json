@@ -10,7 +10,8 @@
     "prettier": "prettier --write .",
     "ganache": "source .env && source .env && ganache-cli -d -i 3729 -f https://mainnet.infura.io/v3/$INFURA_ID",
     "01-deploy": "node scripts/01-deploy.js",
-    "02-kickoff": "node scripts/02-kickoff.js"
+    "02-kickoff": "node scripts/02-kickoff.js",
+    "03-finalize": "node scripts/03-finalize.js"
   },
   "keywords": [],
   "author": "",

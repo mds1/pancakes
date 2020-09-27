@@ -1,5 +1,6 @@
 const ethers = require('ethers');
 const PancakeManagerData = require('../build/contracts/PancakeManager.json');
+const { time } = require('@openzeppelin/test-helpers');
 
 (async function () {
   // Use ganache account 9 as admin
@@ -17,15 +18,11 @@ const PancakeManagerData = require('../build/contracts/PancakeManager.json');
     adminWallet
   );
 
-  // Kickoff the pool
-  const tx = await pancakeManager.kickoff();
-  await tx.wait();
-  console.log('Kickoff successful');
-
-  // Update the price a few times
-  for (let i = 0; i < 10; i += 1) {
-    const updateTx = await pancakeManager.update();
-    await updateTx.wait();
-  }
-  console.log('Price updates successful');
+  // Skip time to enable withdrawals
+  const startTime = await pancakeManager.startTime();
+  const lockupDuration = await pancakeManager.lockupDuration();
+  const endTime = startTime.add(lockupDuration);
+  await time.increaseTo(endTime.toString());
+  await pancakeManager.enableWithdrawals();
+  console.log('Ready for withdrawals');
 })();
