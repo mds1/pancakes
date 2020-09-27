@@ -23,8 +23,10 @@ contract PancakeManager is ReentrancyGuard {
   PancakeToken public buttermilk;
   PancakeToken public chocolateChip;
 
-  // Chainlink price feed contract instances
-  AggregatorV3Interface internal immutable priceFeedEthUsd;
+  // Chainlink price feed contract instance
+  AggregatorV3Interface public constant priceFeedEthUsd = AggregatorV3Interface(
+    0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419
+  );
 
   // Prices returned from Chainlink
   uint256 public currentPriceEthUsd; // used to compute price deltas at each update
@@ -66,11 +68,11 @@ contract PancakeManager is ReentrancyGuard {
     emit ButtermilkDeployed(address(buttermilk));
     emit ChocolateChipDeployed(address(chocolateChip));
 
-    // Configure price feed
-    priceFeedEthUsd = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
-
     // Enable deposits
     depositsEnabled = true;
+
+    // Get ETH price that we'll use for the full initialization phase (for simplicity)
+    _setEthUsdPrice();
   }
 
   // ========================================== Modifiers ==========================================
@@ -105,7 +107,6 @@ contract PancakeManager is ReentrancyGuard {
    * @notice Deposit funds into Tier 1 with ETH
    */
   function depositButtermilk() external payable beforeLockup {
-    _setEthUsdPrice();
     uint256 _output = msg.value.mul(currentPriceEthUsd).div(1e8);
     buttermilk.mint(msg.sender, _output);
   }
@@ -114,7 +115,6 @@ contract PancakeManager is ReentrancyGuard {
    * @notice Deposit funds into Tier 2 with ETH
    */
   function depositChocolateChip() external payable beforeLockup {
-    _setEthUsdPrice();
     uint256 _output = msg.value.mul(currentPriceEthUsd).div(1e8);
     chocolateChip.mint(msg.sender, _output);
   }

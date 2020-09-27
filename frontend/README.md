@@ -26,7 +26,7 @@ The easiest way to interact with the app is with the steps below:
 1. Complete the steps in the [Development Setup](#development-setup) section
 2. Setup MetaMask to use the default ganache-cli seed phrase of `myth like bonus scare over problem client lizard pioneer submit female collect`
 3. Connect MetaMask to localhost port 8545 with chain ID 3729
-4. Reset MetaMask state in Settings > Advanced > Reset Account to avoid nonce mismatches between MetaMask and the local chain
+4. Reset MetaMask state in Settings > Advanced > Reset Account to avoid nonce mismatches between MetaMask and the local chain. This must be done for each account you plan on using
 5. Switch to the `contracts` directory and run `yarn run ganache` to start a ganache instance
 
 Now we have a ganache instance that is ready to to be used. Because the Pancake operation is

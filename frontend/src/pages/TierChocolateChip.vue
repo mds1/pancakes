@@ -8,11 +8,14 @@
       </div>
       <div class="row justify-center items-center">
         <div class="col-3 text-left">Balance</div>
-        <div class="col-3">{{ tokenBalance }} CHOCO</div>
+        <div class="col-3 text-left">
+          {{ Number(tokenBalance).toFixed(2) }}
+          CHOCO
+        </div>
       </div>
       <div class="row justify-center items-center">
         <div class="col-3 text-left">Redeemable For</div>
-        <div class="col-3">${{ usdBalance.toLocaleString() }}</div>
+        <div class="col-3 text-left">${{ Number(usdBalance).toFixed(2) }}</div>
       </div>
     </div>
     <!-- Deposit -->
@@ -96,18 +99,19 @@ function usePancakeManager() {
     const chocolateChipAddress = await pancakeManager.chocolateChip();
     const chocolateChip = new ethers.Contract(chocolateChipAddress, tokenAbi.abi, signer.value);
     const balance = await chocolateChip.balanceOf(userAddress.value);
-    tokenBalance.value = balance.toString();
-
     const chocolateChipPrice = await pancakeManager.chocolateChipPrice();
-    usdBalance.value = ethers.utils.formatEther(balance.mul(chocolateChipPrice));
+    tokenBalance.value = ethers.utils.formatEther(balance);
+    usdBalance.value = ethers.utils.formatUnits(balance.mul(chocolateChipPrice), 36);
   }
 
-  onMounted(async () => await updateBalance());
+  onMounted(async () => {
+    await updateBalance();
+  });
 
   async function onDeposit() {
     try {
       // Send deposit transaction and udpate balance
-      const ethAmount = ethers.BigNumber.from(String(depositAmount.value));
+      const ethAmount = ethers.utils.parseEther(String(depositAmount.value));
       const tx = await pancakeManager.depositChocolateChip({ value: ethAmount });
       const receipt = await tx.wait();
       await updateBalance();
