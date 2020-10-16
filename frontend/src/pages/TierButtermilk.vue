@@ -74,6 +74,7 @@ import addresses from '../addresses.json';
 import pancakeManagerAbi from '../../../contracts/build/contracts/PancakeManager.json';
 import tokenAbi from '../../../contracts/build/contracts/PancakeToken.json';
 
+/* eslint-disable */
 function usePancakeManager() {
   const { userAddress, signer } = useWalletStore();
   const { notifyUser, showError } = useAlerts();
