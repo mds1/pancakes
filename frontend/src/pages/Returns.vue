@@ -101,7 +101,7 @@ function usePlots() {
     const growthOfT1 = [startPrice];
     const growthOfT2 = [startPrice];
     const numberOfTokens = 1; // doesn't make a difference here
-    const targetT1ReturnRate = 0.001; // 0.1% per day is ~44% APY because ETH returns are wild
+    const targetT1ReturnRate = 0.00055; // 0.055% per day is ~20% APY because ETH returns are wild
     for (let i = 0; i < returns.length; i += 1) {
       // returns has length of 1 less than prices, so returnsEth[index] gives the previous price
       const returnRate = Number(returns[i]);
@@ -123,17 +123,21 @@ function usePlots() {
       const addToEth = totalProfit / (numberOfTokens + numberOfTokens); // number of tokens in each tier
       growthOfEth.push(previousTokenPriceEth + addToEth);
 
-      // Desired proft that we want to give T1 token holders, if returns were large enough
-      const desiredT1Profit = previousTotalValueT1 * targetT1ReturnRate;
+      // What all T1 tokens should be worth at current time. We use i+1 because the first time we
+      // go through this loop represents the first elapsed period
+      const desiredT1Value = startPrice * (1 + targetT1ReturnRate) ** (i + 1);
+
+      // How much we want to add to T1 to keep them on track
+      const desiredT1Delta = desiredT1Value - previousTotalValueT1;
 
       // Comute Tier 1 and 2 delta values
       let addToT1;
       let addToT2;
-      if (previousTotalValueT2 + totalProfit - desiredT1Profit >= 0) {
+      if (previousTotalValueT2 + totalProfit - desiredT1Delta >= 0) {
         // Case 1: There are sufficient funds in T2 to give T1 holders the full return, so we give
         // this to T1 holders and T2 holders get the remainder
-        addToT1 = desiredT1Profit / numberOfTokens;
-        addToT2 = (totalProfit - desiredT1Profit) / numberOfTokens;
+        addToT1 = desiredT1Delta / numberOfTokens;
+        addToT2 = (totalProfit - desiredT1Delta) / numberOfTokens;
       } else {
         // Case 2: There are not sufficient profits, so T1 holders are given all potential profits
         // and T2 holders take a loss
